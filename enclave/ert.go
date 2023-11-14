@@ -114,6 +114,7 @@ func VerifyRemoteReport(reportBytes []byte) (attestation.Report, error) {
 		SignerID:        report.SignerID,
 		ProductID:       report.ProductID,
 		TCBStatus:       report.TCBStatus,
+		UEID:            report.UEID,
 	}, verifyErr
 }
 
