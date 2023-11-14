@@ -46,7 +46,12 @@ func parseClaims(claims []C.oe_claim_t) (Report, error) {
 		case C.OE_CLAIM_SGX_REPORT_DATA:
 			report.Data = claimBytes(claim)
 		case C.OE_CLAIM_UEID:
-			report.UEID = claimBytes(claim)
+			// The UEID is prefixed with a type which is currently always OE_UEID_TYPE_RAND for SGX
+			claimUEID := claimBytes(claim)
+			if len(claimUEID) > 0 && claimUEID[0] != C.OE_UEID_TYPE_RAND {
+				return Report{}, errors.New("Expected UEID of type OE_UEID_TYPE_RAND")
+			}
+			report.UEID = claimUEID
 		}
 	}
 
