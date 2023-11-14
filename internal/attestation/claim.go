@@ -45,6 +45,8 @@ func parseClaims(claims []C.oe_claim_t) (Report, error) {
 			report.TCBStatus = tcbstatus.Status(claimUint(claim))
 		case C.OE_CLAIM_SGX_REPORT_DATA:
 			report.Data = claimBytes(claim)
+		case C.OE_CLAIM_UEID:
+			report.UEID = claimBytes(claim)
 		}
 	}
 

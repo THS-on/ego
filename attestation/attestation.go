@@ -22,6 +22,7 @@ type Report struct {
 	SignerID        []byte           // The signer ID for the enclave. For SGX enclaves, this is the MRSIGNER value.
 	ProductID       []byte           // The Product ID for the enclave. For SGX enclaves, this is the ISVPRODID value.
 	TCBStatus       tcbstatus.Status // The status of the enclave's TCB level.
+	UEID            []byte           // The universal entity ID. For SGX enclaves, this is QE identity value when DCAP attestation is used.
 }
 
 var (
