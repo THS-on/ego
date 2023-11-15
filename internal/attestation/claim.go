@@ -7,6 +7,7 @@
 package attestation
 
 // #include "claim.h"
+// #include "sgx_evidence.h"
 import "C"
 import (
 	"errors"
@@ -23,6 +24,7 @@ func ParseClaims(claims uintptr, claimsLength uintptr) (Report, error) {
 func parseClaims(claims []C.oe_claim_t) (Report, error) {
 	report := Report{TCBStatus: tcbstatus.Unknown}
 	hasAttributes := false
+	var reportSGXRequired SGXRequired
 
 	for _, claim := range claims {
 		switch C.GoString(claim.name) {
@@ -52,12 +54,27 @@ func parseClaims(claims []C.oe_claim_t) (Report, error) {
 				return Report{}, errors.New("Expected UEID of type OE_UEID_TYPE_RAND")
 			}
 			report.UEID = claimUEID
+			// SGX Required claims
+		case C.OE_CLAIM_SGX_PF_GP_EXINFO_ENABLED:
+			reportSGXRequired.PfGpExinfoEnabled = claimBool(claim)
+		case C.OE_CLAIM_SGX_ISV_EXTENDED_PRODUCT_ID:
+			reportSGXRequired.ISVExtendedProductID = claimBytes(claim)
+		case C.OE_CLAIM_SGX_IS_MODE64BIT:
+			reportSGXRequired.IsMode64Bit = claimBool(claim)
+		case C.OE_CLAIM_SGX_HAS_PROVISION_KEY:
+			reportSGXRequired.HasProvisionKey = claimBool(claim)
+		case C.OE_CLAIM_SGX_HAS_EINITTOKEN_KEY:
+			reportSGXRequired.HasEINITTokenKey = claimBool(claim)
+		case C.OE_CLAIM_SGX_USES_KSS:
+			reportSGXRequired.UsesKSS = claimBool(claim)
 		}
 	}
 
 	if !hasAttributes {
 		return Report{}, errors.New("missing attributes in report claims")
 	}
+	report.SGXRequired = &reportSGXRequired
+
 	return report, nil
 }
 
@@ -66,6 +83,10 @@ func claimUint(claim C.oe_claim_t) uint {
 		return 0
 	}
 	return uint(*(*C.uint32_t)(unsafe.Pointer(claim.value)))
+}
+
+func claimBool(claim C.oe_claim_t) bool {
+	return bool(*(*C._Bool)(unsafe.Pointer(claim.value)))
 }
 
 func claimBytes(claim C.oe_claim_t) []byte {

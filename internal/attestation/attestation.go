@@ -33,6 +33,22 @@ type Report struct {
 	ProductID       []byte           // The Product ID for the enclave. For SGX enclaves, this is the ISVPRODID value.
 	TCBStatus       tcbstatus.Status // The status of the enclave's TCB level.
 	UEID            []byte           // The universal entity ID. For SGX enclaves, this is QE identity value with an additional first bit that indicates the OE UEID type.
+	HardwareModel   []byte
+	SGXRequired     *SGXRequired
+}
+
+// SGX
+type SGXRequired struct {
+	PfGpExinfoEnabled    bool
+	ISVExtendedProductID []byte
+	IsMode64Bit          bool
+	HasProvisionKey      bool
+	HasEINITTokenKey     bool
+	UsesKSS              bool
+	ConfigID             []byte
+	ConfigSVN            []byte
+	ISVFamilyID          []byte
+	CPUSVN               []byte
 }
 
 // https://github.com/openenclave/openenclave/blob/master/include/openenclave/internal/report.h
