@@ -29,7 +29,6 @@ type Report struct {
 type SGXClaims struct {
 	SGXRequired SGXRequired
 	SGXOptional *SGXOptional
-	ReportData  []byte
 }
 
 // Claims that are in every OE report for SGX

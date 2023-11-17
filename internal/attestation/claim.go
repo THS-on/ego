@@ -114,9 +114,6 @@ func parseClaims(claims []C.oe_claim_t) (Report, error) {
 		case C.OE_CLAIM_SGX_PCE_SVN:
 			reportSGXOptional.PCESVN = claimBytes(claim)
 			claimCountSGXoptional++
-			// Additional SGX specific claims
-		case C.OE_CLAIM_SGX_REPORT_DATA:
-			reportSGX.ReportData = claimBytes(claim)
 		}
 
 	}
