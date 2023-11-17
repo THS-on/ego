@@ -68,6 +68,7 @@ func parseClaims(claims []C.oe_claim_t) (Report, error) {
 			requiredClaimCountSGX++
 		case C.OE_CLAIM_SGX_HAS_PROVISION_KEY:
 			reportSGXRequired.HasProvisionKey = claimBool(claim)
+			requiredClaimCountSGX++
 		case C.OE_CLAIM_SGX_HAS_EINITTOKEN_KEY:
 			reportSGXRequired.HasEINITTokenKey = claimBool(claim)
 			requiredClaimCountSGX++
