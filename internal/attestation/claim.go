@@ -11,6 +11,7 @@ package attestation
 import "C"
 import (
 	"errors"
+	"fmt"
 	"unsafe"
 
 	"github.com/edgelesssys/ego/attestation/tcbstatus"
@@ -25,6 +26,7 @@ func parseClaims(claims []C.oe_claim_t) (Report, error) {
 	report := Report{TCBStatus: tcbstatus.Unknown}
 	hasAttributes := false
 	var reportSGXRequired SGXRequired
+	var requiredClaimCountSGX = 0
 
 	for _, claim := range claims {
 		switch C.GoString(claim.name) {
@@ -57,23 +59,47 @@ func parseClaims(claims []C.oe_claim_t) (Report, error) {
 			// SGX Required claims
 		case C.OE_CLAIM_SGX_PF_GP_EXINFO_ENABLED:
 			reportSGXRequired.PfGpExinfoEnabled = claimBool(claim)
+			requiredClaimCountSGX++
 		case C.OE_CLAIM_SGX_ISV_EXTENDED_PRODUCT_ID:
 			reportSGXRequired.ISVExtendedProductID = claimBytes(claim)
+			requiredClaimCountSGX++
 		case C.OE_CLAIM_SGX_IS_MODE64BIT:
 			reportSGXRequired.IsMode64Bit = claimBool(claim)
+			requiredClaimCountSGX++
 		case C.OE_CLAIM_SGX_HAS_PROVISION_KEY:
 			reportSGXRequired.HasProvisionKey = claimBool(claim)
 		case C.OE_CLAIM_SGX_HAS_EINITTOKEN_KEY:
 			reportSGXRequired.HasEINITTokenKey = claimBool(claim)
+			requiredClaimCountSGX++
 		case C.OE_CLAIM_SGX_USES_KSS:
 			reportSGXRequired.UsesKSS = claimBool(claim)
+			requiredClaimCountSGX++
+		case C.OE_CLAIM_SGX_CONFIG_ID:
+			reportSGXRequired.ConfigID = claimBytes(claim)
+			requiredClaimCountSGX++
+		case C.OE_CLAIM_SGX_CONFIG_SVN:
+			reportSGXRequired.ConfigSVN = claimBytes(claim)
+			requiredClaimCountSGX++
+		case C.OE_CLAIM_SGX_ISV_FAMILY_ID:
+			reportSGXRequired.ISVFamilyID = claimBytes(claim)
+			requiredClaimCountSGX++
+		case C.OE_CLAIM_SGX_CPU_SVN:
+			reportSGXRequired.CPUSVN = claimBytes(claim)
+			requiredClaimCountSGX++
 		}
+
+	}
+	if requiredClaimCountSGX > 0 && requiredClaimCountSGX != C.OE_SGX_REQUIRED_CLAIMS_COUNT {
+		return Report{}, fmt.Errorf("required SGX claims are missing. Only got: %d, expected: %d", requiredClaimCountSGX, C.OE_SGX_REQUIRED_CLAIMS_COUNT)
 	}
 
 	if !hasAttributes {
 		return Report{}, errors.New("missing attributes in report claims")
 	}
-	report.SGXRequired = &reportSGXRequired
+
+	if requiredClaimCountSGX > 0 {
+		report.SGXRequired = &reportSGXRequired
+	}
 
 	return report, nil
 }
