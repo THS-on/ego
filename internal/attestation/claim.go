@@ -25,8 +25,10 @@ func ParseClaims(claims uintptr, claimsLength uintptr) (Report, error) {
 func parseClaims(claims []C.oe_claim_t) (Report, error) {
 	report := Report{TCBStatus: tcbstatus.Unknown}
 	hasAttributes := false
-	var reportSGXRequired SGXRequired
-	var requiredClaimCountSGX = 0
+	var reportSGX SGXClaims
+	var reportSGXOptional SGXOptional
+	var claimCountSGXrequired = 0
+	var claimCountSGXoptional = 0
 
 	for _, claim := range claims {
 		switch C.GoString(claim.name) {
@@ -58,48 +60,84 @@ func parseClaims(claims []C.oe_claim_t) (Report, error) {
 			report.UEID = claimUEID
 			// SGX Required claims
 		case C.OE_CLAIM_SGX_PF_GP_EXINFO_ENABLED:
-			reportSGXRequired.PfGpExinfoEnabled = claimBool(claim)
-			requiredClaimCountSGX++
+			reportSGX.SGXRequired.PfGpExinfoEnabled = claimBool(claim)
+			claimCountSGXrequired++
 		case C.OE_CLAIM_SGX_ISV_EXTENDED_PRODUCT_ID:
-			reportSGXRequired.ISVExtendedProductID = claimBytes(claim)
-			requiredClaimCountSGX++
+			reportSGX.SGXRequired.ISVExtendedProductID = claimBytes(claim)
+			claimCountSGXrequired++
 		case C.OE_CLAIM_SGX_IS_MODE64BIT:
-			reportSGXRequired.IsMode64Bit = claimBool(claim)
-			requiredClaimCountSGX++
+			reportSGX.SGXRequired.IsMode64Bit = claimBool(claim)
+			claimCountSGXrequired++
 		case C.OE_CLAIM_SGX_HAS_PROVISION_KEY:
-			reportSGXRequired.HasProvisionKey = claimBool(claim)
-			requiredClaimCountSGX++
+			reportSGX.SGXRequired.HasProvisionKey = claimBool(claim)
+			claimCountSGXrequired++
 		case C.OE_CLAIM_SGX_HAS_EINITTOKEN_KEY:
-			reportSGXRequired.HasEINITTokenKey = claimBool(claim)
-			requiredClaimCountSGX++
+			reportSGX.SGXRequired.HasEINITTokenKey = claimBool(claim)
+			claimCountSGXrequired++
 		case C.OE_CLAIM_SGX_USES_KSS:
-			reportSGXRequired.UsesKSS = claimBool(claim)
-			requiredClaimCountSGX++
+			reportSGX.SGXRequired.UsesKSS = claimBool(claim)
+			claimCountSGXrequired++
 		case C.OE_CLAIM_SGX_CONFIG_ID:
-			reportSGXRequired.ConfigID = claimBytes(claim)
-			requiredClaimCountSGX++
+			reportSGX.SGXRequired.ConfigID = claimBytes(claim)
+			claimCountSGXrequired++
 		case C.OE_CLAIM_SGX_CONFIG_SVN:
-			reportSGXRequired.ConfigSVN = claimBytes(claim)
-			requiredClaimCountSGX++
+			reportSGX.SGXRequired.ConfigSVN = claimBytes(claim)
+			claimCountSGXrequired++
 		case C.OE_CLAIM_SGX_ISV_FAMILY_ID:
-			reportSGXRequired.ISVFamilyID = claimBytes(claim)
-			requiredClaimCountSGX++
+			reportSGX.SGXRequired.ISVFamilyID = claimBytes(claim)
+			claimCountSGXrequired++
 		case C.OE_CLAIM_SGX_CPU_SVN:
-			reportSGXRequired.CPUSVN = claimBytes(claim)
-			requiredClaimCountSGX++
+			reportSGX.SGXRequired.CPUSVN = claimBytes(claim)
+			claimCountSGXrequired++
+			//SGX optional claims
+		case C.OE_CLAIM_SGX_TCB_INFO:
+			reportSGXOptional.TCBInfo = claimBytes(claim)
+			claimCountSGXoptional++
+		case C.OE_CLAIM_SGX_TCB_ISSUER_CHAIN:
+			reportSGXOptional.TCBIssuerChain = claimBytes(claim)
+			claimCountSGXoptional++
+		case C.OE_CLAIM_SGX_PCK_CRL:
+			reportSGXOptional.PCKCRL = claimBytes(claim)
+			claimCountSGXoptional++
+		case C.OE_CLAIM_SGX_ROOT_CA_CRL:
+			reportSGXOptional.RootCACRL = claimBytes(claim)
+			claimCountSGXoptional++
+		case C.OE_CLAIM_SGX_CRL_ISSUER_CHAIN:
+			reportSGXOptional.CRLIssuerChain = claimBytes(claim)
+			claimCountSGXoptional++
+		case C.OE_CLAIM_SGX_QE_ID_INFO:
+			reportSGXOptional.QEIDInfo = claimBytes(claim)
+			claimCountSGXoptional++
+		case C.OE_CLAIM_SGX_QE_ID_ISSUER_CHAIN:
+			reportSGXOptional.QEIDIssuerChain = claimBytes(claim)
+			claimCountSGXoptional++
+		case C.OE_CLAIM_SGX_PCE_SVN:
+			reportSGXOptional.PCESVN = claimBytes(claim)
+			claimCountSGXoptional++
+			// Additional SGX specific claims
+		case C.OE_CLAIM_SGX_REPORT_DATA:
+			reportSGX.ReportData = claimBytes(claim)
 		}
 
 	}
-	if requiredClaimCountSGX > 0 && requiredClaimCountSGX != C.OE_SGX_REQUIRED_CLAIMS_COUNT {
-		return Report{}, fmt.Errorf("required SGX claims are missing. Only got: %d, expected: %d", requiredClaimCountSGX, C.OE_SGX_REQUIRED_CLAIMS_COUNT)
+	if claimCountSGXrequired > 0 && claimCountSGXrequired != C.OE_SGX_REQUIRED_CLAIMS_COUNT {
+		return Report{}, fmt.Errorf("some required SGX claims are missing. Only got: %d, expected: %d", claimCountSGXrequired, C.OE_SGX_REQUIRED_CLAIMS_COUNT)
+	}
+
+	if claimCountSGXoptional > C.OE_SGX_OPTIONAL_CLAIMS_COUNT {
+		return Report{}, fmt.Errorf("optional SGX claims are too many. Got: %d, expected maximum: %d", claimCountSGXoptional, C.OE_SGX_OPTIONAL_CLAIMS_COUNT)
 	}
 
 	if !hasAttributes {
 		return Report{}, errors.New("missing attributes in report claims")
 	}
 
-	if requiredClaimCountSGX > 0 {
-		report.SGXRequired = &reportSGXRequired
+	if claimCountSGXoptional > 0 {
+		reportSGX.SGXOptional = &reportSGXOptional
+	}
+
+	if claimCountSGXrequired > 0 {
+		report.SGXClaims = &reportSGX
 	}
 
 	return report, nil
