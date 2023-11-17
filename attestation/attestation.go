@@ -23,7 +23,7 @@ type Report struct {
 	ProductID       []byte           // The Product ID for the enclave. For SGX enclaves, this is the ISVPRODID value.
 	TCBStatus       tcbstatus.Status // The status of the enclave's TCB level.
 	UEID            []byte           // The universal entity ID. For SGX enclaves, this is QE identity value with an additional first bit that indicates the OE UEID type.
-	SGXRequired     SGXRequired
+	SGXRequired     *SGXRequired
 }
 
 type SGXRequired struct {
@@ -37,6 +37,66 @@ type SGXRequired struct {
 	ConfigSVN            []byte
 	ISVFamilyID          []byte
 	CPUSVN               []byte
+}
+
+func FromInternal(internal attestation.Report) Report {
+	var reportSGXRequired SGXRequired
+	if internal.SGXRequired != nil {
+		reportSGXRequired = SGXRequired{
+			PfGpExinfoEnabled:    internal.SGXRequired.PfGpExinfoEnabled,
+			ISVExtendedProductID: internal.SGXRequired.ISVExtendedProductID,
+			IsMode64Bit:          internal.SGXRequired.IsMode64Bit,
+			HasProvisionKey:      internal.SGXRequired.HasProvisionKey,
+			HasEINITTokenKey:     internal.SGXRequired.HasEINITTokenKey,
+			UsesKSS:              internal.SGXRequired.UsesKSS,
+			ConfigID:             internal.SGXRequired.ConfigID,
+			ConfigSVN:            internal.SGXRequired.ConfigSVN,
+			ISVFamilyID:          internal.SGXRequired.ISVFamilyID,
+			CPUSVN:               internal.SGXRequired.CPUSVN,
+		}
+	}
+
+	return Report{
+		Data:            internal.Data,
+		SecurityVersion: internal.SecurityVersion,
+		Debug:           internal.Debug,
+		UniqueID:        internal.UniqueID,
+		SignerID:        internal.SignerID,
+		ProductID:       internal.ProductID,
+		TCBStatus:       internal.TCBStatus,
+		UEID:            internal.UEID,
+		SGXRequired:     &reportSGXRequired,
+	}
+}
+
+func (report Report) ToInternal() attestation.Report {
+	var reportSGXRequired attestation.SGXRequired
+	if report.SGXRequired != nil {
+		reportSGXRequired = attestation.SGXRequired{
+			PfGpExinfoEnabled:    report.SGXRequired.PfGpExinfoEnabled,
+			ISVExtendedProductID: report.SGXRequired.ISVExtendedProductID,
+			IsMode64Bit:          report.SGXRequired.IsMode64Bit,
+			HasProvisionKey:      report.SGXRequired.HasProvisionKey,
+			HasEINITTokenKey:     report.SGXRequired.HasEINITTokenKey,
+			UsesKSS:              report.SGXRequired.UsesKSS,
+			ConfigID:             report.SGXRequired.ConfigID,
+			ConfigSVN:            report.SGXRequired.ConfigSVN,
+			ISVFamilyID:          report.SGXRequired.ISVFamilyID,
+			CPUSVN:               report.SGXRequired.CPUSVN,
+		}
+	}
+
+	return attestation.Report{
+		Data:            report.Data,
+		SecurityVersion: report.SecurityVersion,
+		Debug:           report.Debug,
+		UniqueID:        report.UniqueID,
+		SignerID:        report.SignerID,
+		ProductID:       report.ProductID,
+		TCBStatus:       report.TCBStatus,
+		UEID:            report.UEID,
+		SGXRequired:     &reportSGXRequired,
+	}
 }
 
 var (

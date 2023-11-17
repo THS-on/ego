@@ -107,24 +107,7 @@ func VerifyRemoteReport(reportBytes []byte) (attestation.Report, error) {
 		return attestation.Report{}, err
 	}
 
-	var reportSGXRequired attestation.SGXRequired
-
-	if report.SGXRequired != nil {
-		reportSGXRequired.PfGpExinfoEnabled = reportSGXRequired.PfGpExinfoEnabled
-		reportSGXRequired.ISVExtendedProductID = report.SGXRequired.ISVExtendedProductID
-	}
-
-	return attestation.Report{
-		Data:            report.Data,
-		SecurityVersion: report.SecurityVersion,
-		Debug:           report.Debug,
-		UniqueID:        report.UniqueID,
-		SignerID:        report.SignerID,
-		ProductID:       report.ProductID,
-		TCBStatus:       report.TCBStatus,
-		UEID:            report.UEID,
-		SGXRequired:     reportSGXRequired,
-	}, verifyErr
+	return attestation.FromInternal(report), verifyErr
 }
 
 // GetLocalReport gets a report signed by the enclave platform for use in local attestation.
